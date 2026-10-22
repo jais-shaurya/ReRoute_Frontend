@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f1f5f2">
+  <title>ReRoute | Recovery Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#top" aria-label="ReRoute home">
+      <span class="brand-mark" aria-hidden="true">R</span>
+      <span class="brand-name">ReRoute</span>
+    </a>
+    <div class="api-status" id="api-status" role="status" aria-live="polite">
+      <span class="status-dot" aria-hidden="true"></span>
+      <span id="api-status-label">Checking API</span>
+    </div>
+    <div class="account-bar hidden" id="account-bar">
+      <span id="account-label"></span>
+      <button class="quiet-button" id="logout-button" type="button">Sign out</button>
+    </div>
+  </header>
+
+  <main class="page-shell login-shell" id="login-view">
+    <section class="login-panel" aria-labelledby="login-title">
+      <div class="eyebrow"><span class="eyebrow-line"></span> OPERATIONS / SIGN IN</div>
+      <h1 id="login-title">Welcome back</h1>
+      <p>Sign in to your organization workspace.</p>
+      <form id="login-form" class="compact-form">
+        <label for="login-email">Email</label>
+        <input id="login-email" name="email" type="email" autocomplete="username" required maxlength="160">
+        <label for="login-password">Password</label>
+        <input id="login-password" name="password" type="password" autocomplete="current-password" required maxlength="256">
+        <p class="form-message" id="login-message" role="alert"></p>
+        <button class="primary-button" id="login-button" type="submit">
+          <span id="login-button-label">Sign in</span><span aria-hidden="true">↗</span>
+        </button>
+      </form>
+    </section>
+  </main>
+
+  <main class="page-shell hidden" id="app-shell">
+    <section class="page-heading" aria-labelledby="page-title">
+      <div class="eyebrow"><span class="eyebrow-line"></span> OPERATIONS / PLANNING</div>
+      <div class="heading-row">
+        <div>
+          <h1 id="page-title">Operations workspace</h1>
+          <p><span id="organization-name"></span><span class="heading-divider">/</span><span id="user-role"></span></p>
+        </div>
+        <label class="profile-picker" for="industry-profile">Planning profile
+          <select id="industry-profile">
+            <option value="retail">Retail</option>
+            <option value="manufacturing">Manufacturing</option>
+            <option value="ecommerce">E-commerce</option>
+            <option value="healthcare">Healthcare</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <nav class="workspace-nav" aria-label="Workspace">
+      <button class="nav-tab active" type="button" data-view="overview-view">Overview</button>
+      <button class="nav-tab" type="button" data-view="supply-view">Supply chain</button>
+      <button class="nav-tab" type="button" data-view="scenario-view">Scenarios</button>
+      <button class="nav-tab" type="button" data-view="planning-view">Planner</button>
+      <button class="nav-tab" type="button" data-view="history-view">History</button>
+      <button class="nav-tab hidden" id="team-tab" type="button" data-view="team-view">Team</button>
+    </nav>
+
+    <section class="view-panel" id="overview-view" aria-labelledby="overview-title">
+      <div class="section-heading view-heading">
+        <span class="step-number">01</span>
+        <div><h2 id="overview-title">Organization overview</h2><p id="overview-subtitle">Current supply-chain records and recent planning activity.</p></div>
+      </div>
+      <div class="summary-grid" id="overview-metrics" aria-live="polite"></div>
+      <div class="overview-columns">
+        <section class="data-section">
+          <div class="data-heading"><h3>Recent planning runs</h3><button class="text-button" type="button" data-go="history-view">View history</button></div>
+          <div id="recent-runs" class="recent-runs"></div>
+        </section>
+        <section class="data-section">
+          <h3>Planning profile</h3>
+          <p class="muted-copy">The selected industry profile and its default ranking preferences are applied to new planner requests. This preference is stored in this browser for this account.</p>
+        </section>
+      </div>
+    </section>
+
+    <section class="view-panel hidden" id="supply-view" aria-labelledby="supply-title">
+      <div class="section-heading view-heading">
+        <span class="step-number">02</span>
+        <div><h2 id="supply-title">Supply-chain records</h2><p>View and manage the entities available to your organization.</p></div>
+      </div>
+      <div class="toolbar-row">
+        <label for="entity-type">Entity type</label>
+        <select id="entity-type">
+          <option value="suppliers">Suppliers</option>
+          <option value="customers">Customers</option>
+          <option value="warehouses">Warehouses</option>
+          <option value="factories">Factories</option>
+          <option value="routes">Routes</option>
+        </select>
+        <button class="secondary-button hidden" id="new-entity-button" type="button">Add record</button>
+      </div>
+      <div id="entity-form-slot"></div>
+      <div id="entity-table-slot" class="table-slot" aria-live="polite"></div>
+    </section>
+
+    <section class="view-panel hidden" id="scenario-view" aria-labelledby="scenario-title">
+      <div class="section-heading view-heading">
+        <span class="step-number">03</span>
+        <div><h2 id="scenario-title">Disruption scenarios</h2><p>Create a saved scenario, then run it through the planner.</p></div>
+      </div>
+      <form id="scenario-form" class="workflow-form">
+        <div class="form-grid">
+          <label>Scenario name<input name="name" required minlength="2" maxlength="120"></label>
+          <label>Scenario type<select name="scenario_type" id="scenario-type"><option value="none">No disruption</option><option value="supplier_failure">Supplier failure</option><option value="demand_spike">Demand spike</option><option value="simultaneous">Simultaneous route disruptions</option></select></label>
+          <label>Customer<select name="customer_id" id="scenario-customer" required></select></label>
+          <label>Required quantity<input name="quantity" type="number" min="1" step="1" value="42" required></label>
+          <label class="scenario-supplier-field hidden">Failed supplier<select name="supplier_id" id="scenario-supplier"></select></label>
+          <label class="scenario-spike-field hidden">Demand increase (%)<input name="demand_spike_percentage" type="number" min="0.1" step="0.1"></label>
+          <label class="scenario-routes-field hidden">Disabled route IDs<input name="route_ids" id="scenario-routes" inputmode="numeric" placeholder="e.g. 2, 5"></label>
+          <label class="scenario-routes-field hidden">Simultaneous route IDs<input name="simultaneous_route_ids" id="scenario-simultaneous-routes" inputmode="numeric" placeholder="e.g. 7, 9"></label>
+          <label class="wide-field">Notes<textarea name="notes" rows="2" maxlength="1000"></textarea></label>
+        </div>
+        <p class="form-message" id="scenario-message" role="status"></p>
+        <button class="primary-button role-planner" type="submit">Save scenario <span aria-hidden="true">↗</span></button>
+      </form>
+      <div class="data-heading scenario-list-heading"><h3>Saved scenarios</h3><button class="text-button" id="refresh-scenarios" type="button">Refresh</button></div>
+      <div id="scenario-list" class="record-list" aria-live="polite"></div>
+    </section>
+
+    <section class="view-panel hidden" id="planning-view" aria-labelledby="planner-title">
+      <div class="section-heading view-heading">
+        <span class="step-number">04</span>
+        <div><h2 id="planner-title">Recovery planner</h2><p>Compare feasible options using your selected industry and ranking preferences.</p></div>
+      </div>
+    <div class="workspace">
+      <form class="scenario-form" id="planner-form" novalidate>
+        <div class="section-heading">
+          <span class="step-number">01</span>
+          <div>
+            <h2>Planning scenario</h2>
+            <p>Set the demand and disruption to evaluate.</p>
+          </div>
+        </div>
+
+        <div class="field-grid planner-profile-grid">
+          <div class="field">
+            <label for="customer">Customer ID</label>
+            <select id="customer" name="customer_id" required></select>
+          </div>
+          <div class="field">
+            <label for="quantity">Required units</label>
+            <input id="quantity" name="quantity" type="number" min="1" step="1" value="42" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="disruption">Disruption</label>
+          <select id="disruption" name="disruption_type">
+            <option value="none">No disruption</option>
+            <option value="supplier_failure">Supplier failure</option>
+            <option value="demand_spike">Demand increase</option>
+          </select>
+        </div>
+
+        <div class="conditional-field hidden" id="supplier-options">
+          <div class="field">
+            <label for="supplier">Failed supplier ID</label>
+            <select id="supplier" name="supplier_id"></select>
+          </div>
+        </div>
+
+        <div class="conditional-field hidden" id="spike-options">
+          <div class="field">
+            <label for="spike">Demand increase</label>
+            <div class="input-suffix">
+              <input id="spike" name="demand_spike_percentage" type="number" min="0.1" step="0.1" value="20">
+              <span>%</span>
+            </div>
+          </div>
+        </div>
+
+        <fieldset class="weights">
+          <legend>Ranking preferences <span>Must total 100%</span></legend>
+          <div class="weight-row">
+            <label for="cost-weight">Cost</label>
+            <input id="cost-weight" type="number" min="0" max="100" step="1" value="40" inputmode="numeric">
+            <span>%</span>
+          </div>
+          <div class="weight-row">
+            <label for="time-weight">Delivery time</label>
+            <input id="time-weight" type="number" min="0" max="100" step="1" value="30" inputmode="numeric">
+            <span>%</span>
+          </div>
+          <div class="weight-row">
+            <label for="risk-weight">Risk</label>
+            <input id="risk-weight" type="number" min="0" max="100" step="1" value="30" inputmode="numeric">
+            <span>%</span>
+          </div>
+          <p class="weight-status" id="weight-status" aria-live="polite">Total: 100%</p>
+        </fieldset>
+
+        <button class="primary-button" id="plan-button" type="submit">
+          <span id="button-label">Find recovery plans</span>
+          <span class="button-arrow" aria-hidden="true">↗</span>
+        </button>
+        <p class="form-footnote">Recommendations are for human review. No orders are placed.</p>
+      </form>
+
+      <section class="results" aria-labelledby="results-title" aria-live="polite">
+        <div class="results-heading">
+          <div class="section-heading">
+            <span class="step-number step-number-dark">02</span>
+            <div>
+              <h2 id="results-title">Recommendation</h2>
+              <p id="results-subtitle">Your best feasible plan will appear here.</p>
+            </div>
+          </div>
+          <span class="result-badge" id="result-status">Ready</span>
+        </div>
+
+        <div class="state-panel" id="empty-result">
+          <div class="empty-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+          <h3>Start with a scenario</h3>
+          <p>Choose a customer, set the units, and run the planner to see the recommended route and alternatives.</p>
+        </div>
+
+        <div class="state-panel hidden" id="loading-result">
+          <span class="loader" aria-hidden="true"></span>
+          <h3>Finding feasible plans</h3>
+          <p>Evaluating routes, constraints, risk, and your ranking preferences.</p>
+        </div>
+
+        <div class="state-panel error-panel hidden" id="error-result" role="alert">
+          <span class="error-mark" aria-hidden="true">!</span>
+          <h3>Could not complete planning</h3>
+          <p id="error-message"></p>
+        </div>
+
+        <div class="recommendation hidden" id="actual-result">
+          <div class="recommendation-topline">
+            <div>
+              <span class="success-label">TOP RANKED PLAN</span>
+              <h3 id="recommendation-heading">Recommended recovery</h3>
+            </div>
+            <span class="rank-pill">#1</span>
+          </div>
+
+          <dl class="metrics" aria-label="Recommended plan metrics">
+            <div class="metric"><dt>Transport cost</dt><dd id="cost">-</dd></div>
+            <div class="metric"><dt>Delivery time</dt><dd id="time">-</dd></div>
+            <div class="metric"><dt id="risk-label">Plan risk</dt><dd id="risk">-</dd></div>
+            <div class="metric"><dt>Overall score</dt><dd id="score">-</dd></div>
+          </dl>
+
+          <section class="result-section" aria-labelledby="route-title">
+            <div class="result-section-heading">
+              <h4 id="route-title">Recommended route</h4>
+              <span class="mono-label" id="route-length"></span>
+            </div>
+            <ol class="route" id="route"></ol>
+          </section>
+
+          <div class="result-columns">
+            <section class="result-section explanation-section">
+              <h4>Why this plan</h4>
+              <p id="explanation"></p>
+              <p class="scenario-line" id="scenario"></p>
+            </section>
+            <section class="result-section actions-section">
+              <h4>Suggested actions</h4>
+              <ol id="actions" class="actions-list"></ol>
+            </section>
+          </div>
+
+          <section class="result-section alternatives-section" aria-labelledby="alternatives-title">
+            <div class="result-section-heading">
+              <h4 id="alternatives-title">Alternatives</h4>
+              <span class="mono-label" id="alternative-count"></span>
+            </div>
+            <div class="alternatives-list" id="alternatives-list"></div>
+          </section>
+          <section class="result-section rejected-section hidden" id="rejected-section" aria-labelledby="rejected-title">
+            <div class="result-section-heading"><h4 id="rejected-title">Rejected candidates</h4><span class="mono-label" id="rejected-count"></span></div>
+            <ul id="rejected-list" class="rejected-list"></ul>
+          </section>
+        </div>
+      </section>
+    </div>
+    </section>
+
+    <section class="view-panel hidden" id="history-view" aria-labelledby="history-title">
+      <div class="section-heading view-heading">
+        <span class="step-number">05</span>
+        <div><h2 id="history-title">Planning history</h2><p>Review saved runs and compare their recommendations.</p></div>
+      </div>
+      <div class="history-layout">
+        <div id="history-list" class="record-list" aria-live="polite"></div>
+        <section class="history-detail" id="history-detail" aria-live="polite">
+          <p class="muted-copy">Select a run to inspect its recommendation, alternatives, and feasibility explanation.</p>
+        </section>
+      </div>
+    </section>
+
+    <section class="view-panel hidden" id="team-view" aria-labelledby="team-title">
+      <div class="section-heading view-heading">
+        <span class="step-number">06</span>
+        <div><h2 id="team-title">Organization members</h2><p>Administrators can add planners, analysts, and readers to this organization.</p></div>
+      </div>
+      <form id="member-form" class="workflow-form">
+        <div class="form-grid">
+          <label>Full name<input name="full_name" required minlength="2"></label>
+          <label>Email<input name="email" type="email" required maxlength="160"></label>
+          <label>Password<input name="password" type="password" required minlength="12" maxlength="256" autocomplete="new-password"></label>
+          <label>Role<select name="role"><option value="planner">Planner</option><option value="analyst">Analyst</option><option value="reader">Reader</option></select></label>
+        </div>
+        <p class="form-message" id="member-message" role="status"></p>
+        <button class="primary-button" type="submit">Add member <span aria-hidden="true">↗</span></button>
+      </form>
+      <div id="member-list" class="record-list" aria-live="polite"></div>
+    </section>
+
+    <footer class="page-footer"><span>ReRoute</span><span>Supply-chain recovery planning</span></footer>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="workspace.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
